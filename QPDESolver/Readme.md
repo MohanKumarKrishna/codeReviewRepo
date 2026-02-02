@@ -13,5 +13,4 @@ python quantum_solver.py
 
 or
 
-```bash
 python quantum_variational_solver.py
