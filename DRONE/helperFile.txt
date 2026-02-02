@@ -1,0 +1,159 @@
+###############################################################################
+# 🐳 Docker Commands
+###############################################################################
+
+# Exec into the first running container
+docker exec -it $(docker ps -q | head -n 1) /bin/bash
+
+
+# Run ArduPilot base container with GUI support
+docker run -it \
+  --name ardupilot_ros \
+  --env="DISPLAY=$DISPLAY" \
+  --env="QT_X11_NO_MITSHM=1" \
+  --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+  --net=host \
+  --privileged \
+  ubuntu-ardupilot-base:22.04
+
+
+# List all containers (running + stopped)
+docker ps -a
+
+
+# Start the container interactively
+docker start -ai ardupilot_ros
+
+
+# Commit container state into a new image
+docker commit ardupilot_ros ardupilot_ros_image:latest
+
+
+###############################################################################
+# 🖥️ X11 GUI Access
+###############################################################################
+
+# Allow Docker containers to access host display
+xhost +local:docker
+
+
+###############################################################################
+# 🔄 Container Restart / Access
+###############################################################################
+
+# Restart the container
+docker restart ardupilot_ros
+
+# Exec into the running container
+docker exec -it ardupilot_ros /bin/bash
+
+
+###############################################################################
+# 🎮 Docker Run with GPU + GUI
+###############################################################################
+
+docker run -it \
+  --name ardupilot_ros \
+  --gpus all \
+  --net=host \
+  --privileged \
+  -e DISPLAY=$DISPLAY \
+  -e NVIDIA_DRIVER_CAPABILITIES=all \
+  -e __GLX_VENDOR_LIBRARY_NAME=nvidia \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  --device /dev/dri \
+  ardupilot_ros_image:latest
+
+
+###############################################################################
+# 🚁 ArduPilot SITL – Takeoff / Arming Fixes (Simulation Only)
+###############################################################################
+
+# Disable GPS in simulation
+param set SIM_GPS_DISABLE 0
+
+# Set home position
+wp sethome
+
+# Disable arming checks (⚠️ simulation only)
+param set ARMING_CHECK 0
+
+# Reset EKF
+param set EK3_ENABLE 0
+param set EK3_ENABLE 1
+reboot
+
+
+###############################################################################
+# 🌍 Gazebo Simulation
+###############################################################################
+
+# Run Gazebo with verbose output and real-time execution
+gz sim -v4 -r iris_runway.sdf
+
+# Start ArduCopter SITL with Gazebo Iris model
+sim_vehicle.py -v ArduCopter -f gazebo-iris --model JSON --map --console
+
+
+###############################################################################
+# 🤖 ROS 2 Setup
+###############################################################################
+
+# Source ROS 2 Humble
+source /opt/ros/humble/setup.bash
+
+
+# Start MAVROS node (direct run – more reliable than launch file)
+ros2 run mavros mavros_node --ros-args \
+  -p fcu_url:="udp://:14550@" \
+  -p target_system_id:=1 \
+  -p target_component_id:=1
+
+
+###############################################################################
+# 🔗 Gazebo ↔ ROS 2 Bridges
+###############################################################################
+
+# Source Gazebo–ROS bridge workspace
+source ~/gz_ros_min_bridge/install/setup.bash
+
+# Start IMU bridge
+ros2 run gz_ros_imu_bridge imu_bridge
+
+# Start image bridge
+ros2 run gz_ros_imu_bridge image_bridge
+
+# Start both bridges together
+ros2 run gz_ros_imu_bridge imu_bridge & \
+ros2 run gz_ros_imu_bridge image_bridge
+
+
+###############################################################################
+# 📡 ROS 2 Topic Utilities
+###############################################################################
+
+# List Gazebo-related ROS 2 topics
+ros2 topic list | grep gazebo
+
+# Echo IMU topic
+ros2 topic echo /gazebo/imu
+
+# Show structure of a ROS 2 message type
+ros2 interface show <topic_message_type>
+
+
+###############################################################################
+# 🖼️ Image Visualization
+###############################################################################
+
+# View camera images
+ros2 run rqt_image_view rqt_image_view
+
+
+###############################################################################
+# 🧩 Shell Environment
+###############################################################################
+
+# Reload shell configuration
+source ~/.bashrc
+source ~/.profile

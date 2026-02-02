@@ -1,0 +1,664 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+#include "../headers/pc_dec_cod.h"
+
+int * DATA_GEN(int numBits) {
+    if (_DEBUG_ == 1) {
+        printf("Generating random data bits...\n");
+    }
+
+    int iter_bits;
+
+    int * dataBits = (int *)calloc(numBits, sizeof(int));
+
+    for (iter_bits = 0; iter_bits < numBits; iter_bits++) {
+        *(dataBits + iter_bits) = rand() % 2;
+    }
+
+    return dataBits;
+}
+
+void PRINT_ARRAY_INT(int * dataBits, int numBits) {
+    int iter_bits;
+    
+    for (iter_bits = 0; iter_bits < numBits; iter_bits++) {
+        printf("%d,", *(dataBits + iter_bits));
+    }
+    printf("\n");
+  
+}
+
+void PRINT_ARRAY_DOUBLE(double * dataBits, int numBits) {
+    int iter_bits;
+    
+    for (iter_bits = 0; iter_bits < numBits; iter_bits++) {
+        printf("%f,", (double)(*(dataBits + iter_bits)));
+    }
+    printf("\n");
+  
+}
+
+void PRINT_MAT_INT(int ** dataMat, int rows, int cols) {
+    int iter_rows, iter_cols;
+
+    for (iter_rows = 0; iter_rows < rows; iter_rows++) {
+        for (iter_cols = 0; iter_cols < cols; iter_cols++) {
+            printf("%d ", *(*(dataMat + iter_cols) + iter_rows));
+        }
+        printf("\n");
+    }
+
+}
+
+
+void PRINT_MAT_DOUBLE(double ** dataMat, int rows, int cols) {
+    int iter_rows, iter_cols;
+
+    for (iter_rows = 0; iter_rows < rows; iter_rows++) {
+        for (iter_cols = 0; iter_cols < cols; iter_cols++) {
+            printf("%f ", *(*(dataMat + iter_cols) + iter_rows));
+        }
+        printf("\n");
+    }
+
+}
+
+// Performs Long Division between Two Polynomials
+
+int * poly_long_div(int * P1, int * P2, int L1, int L2, int * remLen) {
+    int iter_bits, tmp, deg1, deg2;
+    int * tmp_poly;
+
+    int * rem = (int *)calloc(L1, sizeof(int));
+
+    for (iter_bits = 0; iter_bits < L1; iter_bits++) {
+        *(rem + iter_bits) = *(P1 + iter_bits);
+    }
+
+    while((degree_poly(rem, L1) - degree_poly(P2, L2)) >= 0) {
+        tmp = degree_poly(rem, L1) - degree_poly(P2, L2);
+        tmp_poly = incr_degree_poly(P2, L2, tmp);
+
+        for (iter_bits = 0; iter_bits < L1; iter_bits++) {
+            if ((*(rem + iter_bits) - *(tmp_poly + iter_bits)) != 0) {
+                *(rem + iter_bits) = 1;
+            } else {
+                *(rem + iter_bits) = 0;
+            }
+        }
+
+        if (SUM_ARRAY_INT(rem, L1) == 0) {
+            break;
+        }
+
+        deg1 = degree_poly(rem, L1);
+        rem = rem + L1 - deg1 - 1;
+        L1 = deg1 + 1;
+
+        free(tmp_poly);
+    }
+
+    *remLen = L1;
+
+    return rem;
+}
+
+int SUM_ARRAY_INT(int * dataBits, int L) {
+    int iter_bits, sum = 0;
+
+    for (iter_bits = 0; iter_bits < L; iter_bits++) {
+        sum += *(dataBits + iter_bits);
+    }
+
+    return sum;
+}
+
+// Returns Degree of a Polynomial
+int degree_poly(int * poly, int numBits) {
+    // For iter var and return var
+    int iter_bits, deg;
+
+    // Iterating over the polynomial and finding the degree
+    for (iter_bits = 0; iter_bits < numBits; iter_bits++) {
+        if (*(poly + iter_bits)) {
+            deg = numBits - iter_bits - 1;
+            break;
+        }
+    }
+
+    return deg;
+}
+
+// Increase the Degree of the Polynomial
+int * incr_degree_poly(int * poly, int numBits, int incr_deg) {
+    int iter_bits;
+    int * newPoly = (int * )calloc(numBits + incr_deg, sizeof(int));
+
+    for (iter_bits = 0; iter_bits < numBits; iter_bits++) {
+        *(newPoly + iter_bits) = *(poly + iter_bits);
+
+        if (iter_bits < incr_deg) {
+            *(newPoly + iter_bits + numBits) = 0;
+        }
+    }
+
+    return newPoly;
+}
+
+double * zeros_d(int len) {
+    int iter_bits;
+    double * dataBits = (double *)calloc(len, sizeof(double));
+
+    for (iter_bits = 0; iter_bits < len; iter_bits++) {
+        *(dataBits + iter_bits) = 0;
+    }
+
+    return dataBits;
+}
+
+
+double * ones_d(int len) {
+    int iter_bits;
+    double * dataBits = (double *)calloc(len, sizeof(double));
+
+    for (iter_bits = 0; iter_bits < len; iter_bits++) {
+        *(dataBits + iter_bits) = 1.0;
+    }
+
+    return dataBits;
+}
+
+
+int * zeros(int len) {
+    int iter_bits;
+    int * dataBits = (int *)calloc(len, sizeof(int));
+
+    for (iter_bits = 0; iter_bits < len; iter_bits++) {
+        *(dataBits + iter_bits) = 0;
+    }
+
+    return dataBits;
+}
+
+
+int * ones(int len) {
+    int iter_bits;
+    int * dataBits = (int *)calloc(len, sizeof(int));
+
+    for (iter_bits = 0; iter_bits < len; iter_bits++) {
+        *(dataBits + iter_bits) = 1;
+    }
+
+    return dataBits;
+}
+
+void bitxor(int * x1, int * x2, int len) {
+    int iter_bits;
+    // int * y = (int *)malloc(sizeof(int) * len);
+
+    for (iter_bits = 0; iter_bits < len; iter_bits++) {
+        *(x1 + iter_bits) = *(x1 + iter_bits) ^ *(x2 + iter_bits);
+    }
+
+}
+
+int * merge(int * s1, int * s2, int L1, int L2) {
+    int i = 0, j = 0, k = 0;
+
+    int * s_tmp = (int *)calloc(sizeof(int), (L1 + L2));
+
+    while (i < L1 && j < L2) {
+        if (*(s1 + i) < *(s2 + j)) {
+            *(s_tmp + k) = *(s1 + i);
+            i++;
+            k++;
+        } else {
+            *(s_tmp + k) = *(s2 + j);
+            j++;
+            k++;
+        }
+    }
+
+    while (i < L1) {
+        *(s_tmp + k) = *(s1 + i);
+        i++;
+        k++;
+    }
+
+    while (j < L2) {
+        *(s_tmp + k) = *(s2 + j);
+        j++;
+        k++;
+    }
+
+    return s_tmp;
+}
+
+int * mergeSort(int * s, int L) {
+    int i;
+
+    if (L == 1) {
+        return s;
+    }
+
+    int * s1 = (int *)calloc(sizeof(int), (int)floor(L/2));
+    int * s2 = (int *)calloc(sizeof(int), (int)(L - floor(L/2)));
+    
+    for (i = 0; i < (int)floor(L/2); i++) {
+        *(s1 + i) = *(s + i);
+    }
+
+    for (i = (int)floor(L/2); i < L; i++) {
+        *(s2 + i - (int)floor(L/2)) = *(s + i);        
+    }
+
+    s1 = mergeSort(s1, (int)floor(L/2));
+    s2 = mergeSort(s2, (int)(L - floor(L/2)));
+
+    s = merge(s1, s2, (int)floor(L/2), (int)(L - floor(L/2)));
+
+    free(s1);
+    free(s2);
+
+    return s;
+}
+
+double * BPSK_MOD(int * dataBits, int L) {
+    if (_DEBUG_ == 1) {
+        printf("Peforming BPSK modulation...\n");
+    }
+
+    int iter_bits;
+
+    double * modData = (double *)calloc(L, sizeof(double));
+
+    for (iter_bits = 0; iter_bits < L; iter_bits++) {
+        *(modData + iter_bits) = -1 * (*(dataBits + iter_bits) == 0) + 1 * (*(dataBits + iter_bits) == 1);
+    }
+
+    return modData;
+}
+
+int * BSC_Channel(int * dataBits, int L, double rho) {
+    if (_DEBUG_ == 1) {
+        printf("Simulating Binary Symmetric Channel...\n");
+    }
+
+    int iter_syms;
+    int * rxData = (int *)calloc(L, sizeof(double));
+
+    for (iter_syms = 0; iter_syms < L; iter_syms++) {
+        if (((double)rand() / RAND_MAX) > (1 - rho)) {
+            *(rxData + iter_syms) = 1 - *(dataBits + iter_syms);
+        } else {
+            *(rxData + iter_syms) = *(dataBits + iter_syms);            
+        }
+    }
+    
+    return rxData;
+}
+
+
+double * AWGN(double * modData, int L, double SNRdB) {
+    if (_DEBUG_ == 1) {
+        printf("Simulating AWGN Channel...\n");
+    }
+
+    int iter_syms;
+    double * rxData = (double *)calloc(L, sizeof(double));
+    double SNR = pow(10, SNRdB / 10);
+
+    for (iter_syms = 0; iter_syms < L; iter_syms++) {
+        *(rxData + iter_syms) = *(modData + iter_syms) + (double)(1/sqrt(SNR)) * randn();
+    }
+    
+    return rxData;
+}
+
+double * BPSK_DEMOD(double * rxSyms, int L, int LR_PROB_1) {
+    if (_DEBUG_ == 1) {
+        printf("Peforming BPSK demodulation...\n");
+    }
+
+    int iter_syms;
+
+    double * rxLR = (double *)calloc(L, sizeof(double));
+
+    for (iter_syms = 0; iter_syms < L; iter_syms++) {
+        if (LR_PROB_1 == 1) {
+            *(rxLR + iter_syms) = (exp(-(pow((*(rxSyms + iter_syms) - 1), 2))));
+        } else {
+            *(rxLR + iter_syms) = (exp(-(pow((*(rxSyms + iter_syms) + 1), 2)) + (pow((*(rxSyms + iter_syms) - 1), 2)))) + 0.01;
+            
+            if (*(rxLR + iter_syms) > 10) {
+                *(rxLR + iter_syms) = 10;
+            }
+        }
+
+    }
+
+    return rxLR;
+}
+double randn() {
+    // Implemented using Box Muller Transform
+    double x1 = (double)rand() / RAND_MAX;
+    double x2 = (double)rand() / RAND_MAX;
+
+    return sqrt(-2 * log(x1)) * cos(2 * 3.14159 * x2);
+}
+
+int QUAD_EQN_SOL(int a, int b, int c) {
+    double delta = (b * b) - 4 * a * c;
+    double root1, root2;
+
+    if (delta > 0) {
+        root1 = (-b + sqrt(delta)) / (2 * a);
+        root2 = (-b - sqrt(delta)) / (2 * a);
+    } else if (delta == 0) {
+        root1 = root2 = -b / (2 * a);
+    } else {
+        root1 = root2 = 0;
+    }
+
+    if (root1 > root2) {
+        return (int)ceil(root1);
+    }
+
+    return (int)ceil(root2);
+}
+
+int isEqual_INT(int * x1, int * x2, int L) {
+    int iter;
+
+    for (iter = 0; iter < L; iter++) {
+        if ((*(x1 + iter) != *(x2 + iter))) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int isEqual_DOUBLE(double * x1, double * x2, int L) {
+    int iter;
+
+    for (iter = 0; iter < L; iter++) {
+        if ((*(x1 + iter) - *(x2 + iter)) != 0.0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int bitXORSum(int * x1, int * x2, int L) {
+    int cnt = 0;
+    
+    for (int iter = 0; iter < L; iter++) {
+        if (*(x1 + iter) != *(x2 + iter)) {
+            cnt++;
+        }
+    }
+
+    return cnt;
+}
+
+double norm(double * x, int L) {
+    double sum = 0;
+    
+    for (int iter = 0; iter < L; iter++) {
+        sum += *(x + L);
+    }
+
+    return sum;
+}
+
+void ARRAY_INT_COPY(int * dst, int * src, int L) {
+    int iter;
+
+    for (iter = 0; iter < L; iter++) {
+        *(dst + iter) = *(src + iter);
+    }
+}
+
+int * linspace(int start, int stop, int step) {
+    int len = (int)((double)(stop - start)/step + 1);
+
+    int * seq = (int *)calloc(len, sizeof(int));
+
+    for (int iter_seq = 0; iter_seq < len; iter_seq++) {
+        *(seq + iter_seq) = start + iter_seq * step;
+    }
+
+    return seq;
+}
+
+int * seqUnion(int * seq1, int * seq2, int L1, int L2, int * L) {
+    int iter_bits;
+    int * master_seq_tmp = (int *)calloc(L1 + L2, sizeof(int));
+    int * master_seq = NULL; //(int *)calloc(L1 + L2, sizeof(int));
+
+    for (iter_bits = 0; iter_bits < L1; iter_bits++) {
+        *(master_seq_tmp + iter_bits) = *(seq1 + iter_bits);
+    }
+
+    *L = L1;
+
+    for (int iter_bits = L1; iter_bits < L1 + L2; iter_bits++) {
+        if (!(isElementInArray(seq1, L1, *(seq2 + iter_bits - L1)))) {
+            *(master_seq_tmp + *L) = *(seq2 + iter_bits - L1);
+            *L = *L + 1;
+        }
+    }
+
+    master_seq = (int *)calloc(*L, sizeof(int));
+
+    for (int iter_bits = 0; iter_bits < *L; iter_bits++) {
+        *(master_seq + iter_bits) = *(master_seq_tmp);
+    }
+
+    free(master_seq_tmp);
+
+    return master_seq;
+}
+
+int isElementInArray(int * seq, int len, int el) {
+    for (int iter_seq = 0; iter_seq < len; iter_seq++) {
+        if (*(seq + iter_seq) == el) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int * unionElToArray(int * seq, int L, int el, int * seq_len) {
+    int * newSeq = (int *)calloc(L + 1, sizeof(int));
+
+    if (!(isElementInArray(seq, L, el))) {
+        for (int iter_seq = 0; iter_seq < L; iter_seq++) {
+            *(newSeq + iter_seq) = *(seq + iter_seq);
+        }
+
+        *(newSeq + L) = el;
+        *(seq_len) = *(seq_len) + 1;
+        
+        return newSeq;
+    }
+
+    return seq;
+}
+
+double * addVectors_d(double * x1, double * x2, int len) {
+    int iter_var;
+
+    double * y = (double *)calloc(len, sizeof(double));
+
+    for (iter_var = 0; iter_var < len; iter_var++) {
+        *(y + iter_var) = *(x1 + iter_var) + *(x2 + iter_var);
+    }
+
+    return y;
+}
+
+double * subVectors_d(double * x1, double * x2, int len) {
+    int iter_var;
+
+    double * res = (double *)calloc(len, sizeof(double));
+
+    for (iter_var = 0; iter_var < len; iter_var++) {
+        *(res + iter_var) = *(x1 + iter_var) - *(x2 + iter_var);
+    }
+
+    return res;
+}
+
+double * subVectorByConstant(double * x, double val, int len) {
+    int iter_var;
+
+    double * res = (double *)calloc(len, sizeof(double));
+
+    for (iter_var = 0; iter_var < len; iter_var++) {
+        *(res + iter_var) = *(x + iter_var) - val;
+    }
+
+    return res;
+}
+
+double sum_d(double * x, int len) {
+    int iter_var;
+    double res = 0;
+
+    for (iter_var = 0; iter_var < len; iter_var++) {
+        res += *(x + iter_var);
+    }
+
+    return res;
+}
+
+double * squareArray_d(double * x, int len) {
+    int iter_var;
+    double * res = (double *)calloc(len, sizeof(double));
+
+    for (iter_var = 0; iter_var < len; iter_var++) {
+        *(res + iter_var) = (*(x + iter_var)) * (*(x + iter_var));
+    }
+
+    return res;
+}
+
+double mean_d(double * x, int len) {
+    double res = sum_d(x, len);
+
+    return res / len;
+}
+
+double variance_d(double * x, int len) {
+    double mean = mean_d(x, len);
+
+    double * dataSubMean = subVectorByConstant(x, mean, len);
+
+    dataSubMean = squareArray_d(dataSubMean, len);
+
+    return mean_d(dataSubMean, len);
+}
+
+double * intToDoubleArray(int * x, int len) {
+    double * y = (double *)malloc(sizeof(double) * len);
+
+    for (int iter = 0; iter < len; iter++) {
+        *(y + iter) = (double)(*(x + iter));
+    }
+
+    return y;
+ }
+int * charToINTArray(char data) {
+    int * dataBits = (int *)malloc(8 * sizeof(int));
+
+    for (int iterBits = 0; iterBits < 8; iterBits++) {
+        *(dataBits + iterBits) = ((data & (1 << (8 - iterBits - 1))) > 0);
+    }
+
+    return dataBits;
+}
+
+char INTArrayToChar(int * dataBits) {
+    char data = 0x00000000;
+
+    for (int iterBits = 0; iterBits < 8; iterBits++) {
+        data = data | (1 << iterBits) * dataBits[7-iterBits];
+    }
+
+    return data % 0xff;
+}
+
+int * loadImg(int * imgLen) {
+    FILE * fp;
+    int numBytes;
+    char dataByte;
+    int * dataBits;
+    int * tmpBits;
+    
+    fp = fopen("./images/test_im_bin", "rb");
+    fseek(fp, 0, SEEK_END);
+    numBytes = ftell(fp);
+    *imgLen = numBytes * 8;
+    dataBits = (int *)malloc(numBytes * 8 * sizeof(int));
+    rewind(fp);
+
+    for (int iterBytes = 0; iterBytes < numBytes; iterBytes++) {
+        fread(&dataByte, 1, 1, fp);
+        tmpBits = charToINTArray(dataByte);
+        for (int iterBits = 0; iterBits < 8; iterBits++) {
+            dataBits[iterBytes * 8 + iterBits] = tmpBits[iterBits];
+        }
+    }
+
+    fclose(fp);
+
+    return dataBits;
+} 
+
+int saveImg(int * imgData, int imgLen) {
+    FILE * fp = fopen("./images/test_im_rec_bin", "wb");
+    char data = 0x00000000;
+
+
+    for (int iterBytes = 0; iterBytes < imgLen / 8; iterBytes++) {
+        data = INTArrayToChar(&imgData[iterBytes * 8]);
+        fwrite(&data, 1, 1, fp);
+    }
+
+    fclose(fp);
+    return 0;
+} 
+
+int * appendZerosINT(int * data, int len, int numZeros) {
+    int * data_a = (int * )malloc((len + numZeros) * sizeof(int));
+
+    for (int iter_data = 0; iter_data < (len + numZeros); iter_data++) {
+        if (iter_data < len) {
+            *(data_a + iter_data) = *(data + iter_data);        
+        } else {
+            *(data_a + iter_data) = 0;        
+        }
+    }
+
+    free(data);
+
+    return data_a;
+}
+
+int * clipLastZerosINT(int * data, int len, int numZeros) {
+    int * data_a = (int * )malloc((len - numZeros) * sizeof(int));
+
+    for (int iter_data = 0; iter_data < (len - numZeros); iter_data++) {
+        *(data_a + iter_data) = *(data + iter_data);        
+    }
+
+    free(data);
+
+    return data_a;
+}
